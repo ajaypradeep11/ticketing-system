@@ -24,6 +24,7 @@
 - **Accent is BLUE (#1C5DD9 light / #6EA8FF dark)** — user requested "blue shade not green" on 2026-07-10; neutrals also blue-tinted
 - Round 2 (2026-07-10, verified end-to-end): ticket **editing** (creator + admin via `ticket_edit.php`), ticket **assignment** (`assigned_to` col with in-place ALTER migration; employees see created OR assigned tickets), **admin self-signup** at `register.php` (name/email/pass/confirm → always creates an admin; user explicitly chose this)
 - Round 3 (2026-07-10): **password management** — `account.php` (self change: current+new+confirm; nav user-chip links to it) and `user_password.php` (admin resets anyone's from Users page). Selects normalized (`appearance:none` + themed chevron `--select-arrow`) after user flagged Role combo height mismatch on macOS
+- Round 4 (2026-07-10, verified end-to-end via Docker curl suite): **role rework + comments** — employees can NO longer create tickets (`ticket_new.php` = `require_admin()`; all New-ticket links/buttons admin-only). Employees CAN change **status** (status-only form on `ticket_view.php`, `action=update`; priority/assignee ignored for them). New **comments** table (bootstrap in `db.php`) + "Progress & comments" thread on ticket view — anyone who can view the ticket can post (`action=comment`, bumps `updated_at`). Comment CSS in `assets/style.css` (`.comment-list/.comment/...`). README role matrix updated. NOTE for testing: `register.php` self-signup always creates an **admin** — create employees via `users.php` (`action=create`)
 
 ## How to Run
 - XAMPP: copy folder to `htdocs`, start Apache, open `http://localhost/ticketing-system/` (MySQL not needed)
@@ -40,6 +41,7 @@
 | `docs/specs/2026-07-10-ticketing-system-design.md` | approved design doc |
 
 ## What's Next (Ideas)
-- Ticket comments thread (was offered, user chose simple flow)
-- Ticket assignment to employees
-- "Change password" page (seeded admin password is hardcoded default)
+- ~~Ticket comments thread~~ done (round 4)
+- ~~Ticket assignment to employees~~ done (round 2)
+- ~~"Change password" page~~ done (round 3)
+- Employee edit rights on title/description are now vestigial (employees can't create tickets, so they're never the creator of new tickets) — could remove or repurpose
