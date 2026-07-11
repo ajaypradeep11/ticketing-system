@@ -40,4 +40,13 @@ Open → In progress → Resolved → Closed. Priorities: low / medium / high.
 - The SQLite file lives at `data/tickets.db`; `data/.htaccess` blocks direct
   web access to it. To reset everything, delete that file.
 - Passwords are hashed (`password_hash`), all queries use prepared statements,
-  and every form carries a CSRF token.
+  every form carries a CSRF token, and session cookies are HttpOnly +
+  SameSite=Lax (Secure is added automatically over HTTPS).
+
+## Security notes — read before exposing beyond a trusted network
+
+- **Anyone who can reach the app can sign up as an admin** (by design, for a
+  trusted internal network). If the server is reachable from outside your
+  team, delete `register.php` and the Sign up link in `login.php`.
+- **The seeded admin has a well-known password** (`admin123`). Change it from
+  the Account page right after first login.
