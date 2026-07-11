@@ -54,7 +54,9 @@ require __DIR__ . '/includes/header.php';
         <div class="eyebrow"><?= $isAdmin ? 'All tickets' : 'Your tickets' ?></div>
         <h1>Hi, <?= e($me['name']) ?></h1>
     </div>
+    <?php if ($isAdmin): ?>
     <a class="btn btn-primary" href="ticket_new.php">New ticket</a>
+    <?php endif; ?>
 </div>
 
 <div class="stats">
@@ -85,8 +87,10 @@ require __DIR__ . '/includes/header.php';
 <?php if (!$recent): ?>
 <div class="card empty">
     <h2>No tickets yet</h2>
-    <p><?= $isAdmin ? 'Tickets created by the team will show up here.' : 'When something needs fixing, file a ticket and track it here.' ?></p>
+    <p><?= $isAdmin ? 'Tickets you create will show up here.' : 'Tickets assigned to you will show up here.' ?></p>
+    <?php if ($isAdmin): ?>
     <a class="btn btn-primary" href="ticket_new.php">Create a ticket</a>
+    <?php endif; ?>
 </div>
 <?php else: ?>
 <div class="table-wrap">

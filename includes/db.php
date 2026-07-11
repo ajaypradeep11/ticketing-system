@@ -57,6 +57,16 @@ function db_bootstrap(PDO $pdo): void
         )
     ");
 
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS comments (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id  INTEGER NOT NULL REFERENCES tickets(id),
+            user_id    INTEGER NOT NULL REFERENCES users(id),
+            body       TEXT    NOT NULL,
+            created_at TEXT    NOT NULL
+        )
+    ");
+
     // Databases created before assignment existed get the column added in place.
     $columns = array_column($pdo->query('PRAGMA table_info(tickets)')->fetchAll(), 'name');
     if (!in_array('assigned_to', $columns, true)) {

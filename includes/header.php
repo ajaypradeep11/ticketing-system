@@ -43,8 +43,8 @@ function nav_class(string $file, string $page): string
         <div class="nav-links">
             <a class="<?= nav_class('dashboard.php', $page) ?>" href="dashboard.php">Dashboard</a>
             <a class="<?= nav_class('tickets.php', $page) ?>" href="tickets.php">Tickets</a>
-            <a class="<?= nav_class('ticket_new.php', $page) ?>" href="ticket_new.php">New ticket</a>
             <?php if ($me['role'] === 'admin'): ?>
+            <a class="<?= nav_class('ticket_new.php', $page) ?>" href="ticket_new.php">New ticket</a>
             <a class="<?= nav_class('users.php', $page) ?>" href="users.php">Users</a>
             <?php endif; ?>
         </div>

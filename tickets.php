@@ -61,7 +61,9 @@ require __DIR__ . '/includes/header.php';
         <div class="eyebrow"><?= $isAdmin ? 'All tickets' : 'Your tickets' ?></div>
         <h1>Tickets</h1>
     </div>
+    <?php if ($isAdmin): ?>
     <a class="btn btn-primary" href="ticket_new.php">New ticket</a>
+    <?php endif; ?>
 </div>
 
 <div class="tabs">
@@ -79,7 +81,9 @@ require __DIR__ . '/includes/header.php';
 <div class="card empty">
     <h2>Nothing here</h2>
     <p><?= $filter === '' ? 'No tickets have been filed yet.' : 'No tickets with the status "' . e(status_label($filter)) . '".' ?></p>
+    <?php if ($isAdmin): ?>
     <a class="btn btn-primary" href="ticket_new.php">Create a ticket</a>
+    <?php endif; ?>
 </div>
 <?php else: ?>
 <div class="table-wrap">

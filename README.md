@@ -20,10 +20,12 @@ Requirements: PHP 8+ with the `pdo_sqlite` extension (enabled by default in XAMP
 
 | | Employee | Admin |
 |---|---|---|
-| Create tickets | ✔ | ✔ |
+| Create tickets | — | ✔ |
 | View tickets | Own + assigned to them | All |
 | Edit title / description | Own tickets | Any ticket |
-| Change status / priority / assignee | | ✔ |
+| Change status | ✔ on their tickets | ✔ |
+| Comment on tickets | ✔ on their tickets | ✔ |
+| Change priority / assignee | | ✔ |
 | Manage user accounts | | ✔ |
 | Self-signup (creates an admin) | — | ✔ via Sign up page |
 | Change own password | ✔ Account page | ✔ Account page |

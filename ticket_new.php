@@ -1,7 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 
-$me = require_login();
+// Only admins may create tickets; employees work the tickets assigned to them.
+$me = require_admin();
 
 $errors      = [];
 $title       = '';

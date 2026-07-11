@@ -27,36 +27,77 @@ if (!$ticket || (!$isAdmin && !$mine)) {
 
 $canEdit = $isAdmin || (int) $ticket['user_id'] === (int) $me['id'];
 
-// Admin updates status / priority / assignee.
-if ($isAdmin && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
+    $action = $_POST['action'] ?? '';
 
-    $status   = $_POST['status'] ?? '';
-    $priority = $_POST['priority'] ?? '';
-    $assigned = (int) ($_POST['assigned_to'] ?? 0);
+    // Anyone who can view the ticket can leave a progress comment.
+    if ($action === 'comment') {
+        $body = trim($_POST['body'] ?? '');
+        if ($body !== '') {
+            $stmt = db()->prepare(
+                'INSERT INTO comments (ticket_id, user_id, body, created_at) VALUES (?, ?, ?, ?)'
+            );
+            $stmt->execute([$id, $me['id'], $body, now()]);
+            db()->prepare('UPDATE tickets SET updated_at = ? WHERE id = ?')->execute([now(), $id]);
 
-    $assignedValid = $assigned === 0;
-    if (!$assignedValid) {
-        $check = db()->prepare('SELECT COUNT(*) FROM users WHERE id = ? AND active = 1');
-        $check->execute([$assigned]);
-        $assignedValid = (int) $check->fetchColumn() > 0;
-    }
-
-    if (in_array($status, TICKET_STATUSES, true) && in_array($priority, TICKET_PRIORITIES, true) && $assignedValid) {
-        $stmt = db()->prepare(
-            'UPDATE tickets SET status = ?, priority = ?, assigned_to = ?, updated_at = ? WHERE id = ?'
-        );
-        $stmt->execute([$status, $priority, $assigned ?: null, now(), $id]);
-
-        flash_set('Ticket ' . ticket_no($id) . ' updated.');
+            flash_set('Comment added.');
+        } else {
+            flash_set('Write a comment before posting.', 'error');
+        }
         header('Location: ticket_view.php?id=' . $id);
         exit;
+    }
+
+    // Employees may change the status; admins also set priority and assignee.
+    if ($action === 'update') {
+        $status = $_POST['status'] ?? '';
+
+        if ($isAdmin) {
+            $priority = $_POST['priority'] ?? '';
+            $assigned = (int) ($_POST['assigned_to'] ?? 0);
+
+            $assignedValid = $assigned === 0;
+            if (!$assignedValid) {
+                $check = db()->prepare('SELECT COUNT(*) FROM users WHERE id = ? AND active = 1');
+                $check->execute([$assigned]);
+                $assignedValid = (int) $check->fetchColumn() > 0;
+            }
+
+            if (in_array($status, TICKET_STATUSES, true) && in_array($priority, TICKET_PRIORITIES, true) && $assignedValid) {
+                $stmt = db()->prepare(
+                    'UPDATE tickets SET status = ?, priority = ?, assigned_to = ?, updated_at = ? WHERE id = ?'
+                );
+                $stmt->execute([$status, $priority, $assigned ?: null, now(), $id]);
+
+                flash_set('Ticket ' . ticket_no($id) . ' updated.');
+                header('Location: ticket_view.php?id=' . $id);
+                exit;
+            }
+        } elseif (in_array($status, TICKET_STATUSES, true)) {
+            $stmt = db()->prepare('UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?');
+            $stmt->execute([$status, now(), $id]);
+
+            flash_set('Ticket ' . ticket_no($id) . ' moved to "' . status_label($status) . '".');
+            header('Location: ticket_view.php?id=' . $id);
+            exit;
+        }
     }
 }
 
 $assignableUsers = $isAdmin
     ? db()->query('SELECT id, name FROM users WHERE active = 1 ORDER BY name')->fetchAll()
     : [];
+
+$stmt = db()->prepare(
+    'SELECT c.*, u.name AS author, u.role AS author_role
+     FROM comments c
+     JOIN users u ON u.id = c.user_id
+     WHERE c.ticket_id = ?
+     ORDER BY c.created_at, c.id'
+);
+$stmt->execute([$id]);
+$comments = $stmt->fetchAll();
 
 $pageTitle = ticket_no($id);
 require __DIR__ . '/includes/header.php';
@@ -84,6 +125,40 @@ require __DIR__ . '/includes/header.php';
 
         <div class="eyebrow" style="margin-bottom: 8px;">Description</div>
         <div class="ticket-desc"><?= e($ticket['description']) ?></div>
+
+        <div class="stub-divider"></div>
+
+        <div class="eyebrow" style="margin-bottom: 12px;">Progress &amp; comments</div>
+
+        <?php if (!$comments): ?>
+        <p class="field-hint" style="margin: 0 0 16px;">No comments yet. Updates on this ticket will show up here.</p>
+        <?php else: ?>
+        <div class="comment-list">
+            <?php foreach ($comments as $c): ?>
+            <div class="comment">
+                <div class="comment-head">
+                    <span class="comment-author"><?= e($c['author']) ?></span>
+                    <span class="role-tag role-<?= e($c['author_role']) ?>"><?= e($c['author_role']) ?></span>
+                    <span class="comment-date mono"><?= e(format_datetime($c['created_at'])) ?></span>
+                </div>
+                <div class="comment-body"><?= e($c['body']) ?></div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <form method="post" class="form-grid">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="comment">
+            <div>
+                <label for="body">Add a comment</label>
+                <textarea id="body" name="body" required
+                          placeholder="Share progress, blockers, or questions about this ticket."></textarea>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">Post comment</button>
+            </div>
+        </form>
     </div>
 
     <div>
@@ -114,6 +189,7 @@ require __DIR__ . '/includes/header.php';
             <div class="eyebrow" style="margin-bottom: 12px;">Update ticket</div>
             <form method="post" class="form-grid">
                 <?= csrf_field() ?>
+                <input type="hidden" name="action" value="update">
                 <div>
                     <label for="status">Status</label>
                     <select id="status" name="status">
@@ -140,6 +216,23 @@ require __DIR__ . '/includes/header.php';
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Save changes</button>
+            </form>
+        </div>
+        <?php else: ?>
+        <div class="card" style="margin-top: 18px;">
+            <div class="eyebrow" style="margin-bottom: 12px;">Update status</div>
+            <form method="post" class="form-grid">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="update">
+                <div>
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <?php foreach (TICKET_STATUSES as $s): ?>
+                        <option value="<?= e($s) ?>" <?= $ticket['status'] === $s ? 'selected' : '' ?>><?= e(status_label($s)) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Save status</button>
             </form>
         </div>
         <?php endif; ?>
