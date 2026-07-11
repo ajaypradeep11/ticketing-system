@@ -1,0 +1,5 @@
+# SQLite database — created automatically on first run; never commit real data
+data/*.db
+
+# OS noise
+.DS_Store
